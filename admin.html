@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ali Aydemir — Site Editor</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:14px/1.45 Arial,sans-serif;background:#101010;color:#eee}.top{position:sticky;top:0;z-index:20;background:#171717;border-bottom:1px solid #303030;padding:14px 20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}.top b{font-size:17px;margin-right:auto}.btn{border:1px solid #555;background:#222;color:#eee;padding:10px 14px;cursor:pointer;border-radius:2px}.btn:hover{border-color:#999}.btn.primary{background:#eee;color:#111;border-color:#eee}.btn.good{background:#d7b37a;color:#111;border-color:#d7b37a}.btn.danger{color:#ffb2b2}.btn:disabled{opacity:.45;cursor:not-allowed}.status{font-size:12px;color:#d7b37a;min-width:120px}.wrap{display:grid;grid-template-columns:310px minmax(0,1fr);min-height:calc(100vh - 66px)}aside{border-right:1px solid #303030;padding:18px;position:sticky;top:66px;height:calc(100vh - 66px);overflow:auto}.project{padding:12px;border:1px solid #333;margin-bottom:7px;cursor:pointer;display:flex;align-items:center;gap:8px}.project.active{border-color:#d7b37a;background:#181818}.project .name{flex:1}.move{display:flex;gap:2px}.move button{background:none;border:0;color:#aaa;cursor:pointer;padding:3px 5px}.editor{padding:28px 34px 80px;max-width:1050px}.editor h1{font:42px Georgia,serif;margin:0 0 24px}.editor h2{font:24px Georgia,serif;margin:36px 0 14px}.connect{border:1px solid #3a3a3a;background:#161616;padding:22px;margin-bottom:26px}.connect strong{display:block;font-size:18px;margin-bottom:6px}.connect p{margin:0 0 14px;color:#aaa;max-width:700px}label.field{display:block;color:#aaa;margin:17px 0 7px;font-size:11px;text-transform:uppercase;letter-spacing:.09em}input[type=text],textarea,select{width:100%;background:#181818;border:1px solid #444;color:#fff;padding:12px;font:inherit}textarea{min-height:90px;resize:vertical}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}.hint{color:#888;line-height:1.55;font-size:12px}.empty{color:#777}.media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:14px}.media-card{border:1px solid #333;background:#171717;overflow:hidden}.media-card.cover{border-color:#d7b37a}.media-card img{display:block;width:100%;height:120px;object-fit:cover;background:#222}.media-card .meta{padding:9px}.media-card .path{font-size:10px;color:#777;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}.media-card .mini{display:flex;gap:5px;flex-wrap:wrap}.media-card button{font-size:11px;padding:6px 8px}.video-box{border:1px solid #333;background:#171717;padding:12px;margin-top:10px;display:flex;gap:10px;align-items:center;justify-content:space-between}.video-box code{font-size:11px;color:#aaa;word-break:break-all}.badge{display:inline-block;border:1px solid #555;padding:4px 7px;font-size:10px;letter-spacing:.08em;color:#bbb}.notice{background:#251f16;border:1px solid #5b472a;padding:12px 14px;color:#e5c89a;margin:0 0 20px}.ok{color:#bfe3bd}.hidden{display:none!important}@media(max-width:800px){.wrap{grid-template-columns:1fr}aside{position:static;height:auto;border-right:0;border-bottom:1px solid #333}.row{grid-template-columns:1fr}.editor{padding:24px 18px}.top b{width:100%}}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>ALI AYDEMIR — SITE EDITOR / V18.0</b>
+  <span class="status" id="status">Klasör bağlı değil</span>
+  <button class="btn" id="connectTop">Site klasörünü seç</button>
+  <button class="btn" id="preview" disabled>Siteyi aç ↗</button>
+  <button class="btn good" id="save" disabled>Dosyalara kaydet</button>
+</div>
+<div class="wrap">
+  <aside>
+    <button class="btn primary" id="add" style="width:100%;margin-bottom:14px" disabled>+ Yeni proje</button>
+    <div id="list"><div class="empty">Önce site klasörünü bağla.</div></div>
+    <p class="hint">Buradaki sıralama sitedeki proje indeksine yansır. Değişiklikler artık tarayıcıda değil, doğrudan <b>projects.js</b> dosyasına kaydedilir.</p>
+  </aside>
+  <main class="editor">
+    <div class="connect" id="connectBox">
+      <strong>1. Site klasörünü bağla</strong>
+      <p>ZIP'i çıkardıktan sonra bu dosyanın bulunduğu ana klasörü seç. Editör <b>projects.js</b> dosyasını okuyacak ve seçtiğin görsel/video dosyalarını <b>assets/user-projects</b> içine kopyalayacak.</p>
+      <button class="btn primary" id="connect">Klasörü seç</button>
+      <p class="hint" style="margin-top:12px">Chrome veya Edge masaüstünde çalışır. Tarayıcı klasöre yazma izni istediğinde izin ver.</p>
+    </div>
+    <div class="notice hidden" id="unsupported">Tarayıcın klasöre doğrudan yazma özelliğini desteklemiyor. Bu editörü masaüstü Chrome veya Edge ile aç.</div>
+    <div id="form"></div>
+  </main>
+</div>
+<script>
+let rootHandle=null, data=[], sel=0, dirty=false;
+const $=s=>document.querySelector(s);
+const esc=(s='')=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const slugify=s=>(s||'project').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'project';
+function setStatus(t,ok=false){$('#status').textContent=t;$('#status').className='status'+(ok?' ok':'')}
+function markDirty(){dirty=true;setStatus('Kaydedilmemiş değişiklik')}
+async function permission(handle,write=false){const opts={mode:write?'readwrite':'read'};if((await handle.queryPermission(opts))==='granted')return true;return (await handle.requestPermission(opts))==='granted'}
+async function getDir(parent,name,create=true){return await parent.getDirectoryHandle(name,{create})}
+async function getFileText(dir,name){const h=await dir.getFileHandle(name);return await (await h.getFile()).text()}
+function parseProjects(text){
+  const marker='window.DEFAULT_PROJECTS';
+  const start=text.indexOf(marker); if(start<0)throw new Error('projects.js içinde DEFAULT_PROJECTS bulunamadı.');
+  const eq=text.indexOf('=',start); const end=text.indexOf(';\nwindow.getProjects',eq);
+  if(eq<0||end<0)throw new Error('projects.js formatı okunamadı.');
+  const arr=text.slice(eq+1,end).trim();
+  return Function('"use strict";return ('+arr+')')();
+}
+function serializeProjects(projects){
+  return `window.DEFAULT_PROJECTS = ${JSON.stringify(projects,null,2)};\nwindow.getProjects = () => window.DEFAULT_PROJECTS;\n`;
+}
+async function writeText(dir,name,text){const h=await dir.getFileHandle(name,{create:true});const w=await h.createWritable();await w.write(text);await w.close()}
+async function connectFolder(){
+  if(!window.showDirectoryPicker){$('#unsupported').classList.remove('hidden');return}
+  try{
+    rootHandle=await window.showDirectoryPicker({mode:'readwrite'});
+    if(!(await permission(rootHandle,true)))throw new Error('Klasöre yazma izni verilmedi.');
+    const text=await getFileText(rootHandle,'projects.js'); data=parseProjects(text); sel=0; dirty=false;
+    $('#connectBox').classList.add('hidden'); $('#unsupported').classList.add('hidden');
+    $('#save').disabled=false;$('#add').disabled=false;$('#preview').disabled=false;$('#connectTop').textContent='Klasörü değiştir';
+    setStatus('Klasör bağlı ✓',true); draw();
+  }catch(e){if(e.name!=='AbortError')alert('Klasör açılamadı: '+e.message)}
+}
+function list(){
+  $('#list').innerHTML=data.map((p,i)=>`<div class="project ${i===sel?'active':''}" data-select="${i}"><span class="name">${esc(p.title||'Untitled')}</span><span class="move"><button data-move="${i},-1" title="Yukarı">↑</button><button data-move="${i},1" title="Aşağı">↓</button></span></div>`).join('')||'<div class="empty">Henüz proje yok.</div>';
+  document.querySelectorAll('[data-select]').forEach(el=>el.onclick=e=>{if(e.target.closest('[data-move]'))return;sel=+el.dataset.select;draw()});
+  document.querySelectorAll('[data-move]').forEach(b=>b.onclick=e=>{e.stopPropagation();const [i,d]=b.dataset.move.split(',').map(Number);move(i,d)});
+}
+function flatGallery(g=[]){return (g||[]).flat().filter(Boolean)}
+function rebuildSimpleGallery(p,arr){p.gallery=arr.slice()}
+function form(){
+  if(!rootHandle){$('#form').innerHTML='';return}
+  if(!data.length){$('#form').innerHTML='<h1>Henüz proje yok</h1>';return}
+  const p=data[sel]; const imgs=flatGallery(p.gallery||[]);
+  $('#form').innerHTML=`
+    <h1>Projeyi düzenle</h1>
+    <div class="row"><div><label class="field">Proje adı</label><input type="text" data-k="title" value="${esc(p.title)}"></div><div><label class="field">Kategori / filtre</label><input type="text" data-k="cat" value="${esc(p.cat||'visualization')}"><div class="hint">architecture · visualization · interior (bir projede birden fazla olabilir)</div></div></div>
+    <label class="field">Proje türü</label><input type="text" data-k="type" value="${esc(p.type||'ARCHITECTURE / VISUALIZATION')}">
+    <label class="field">Kısa açıklama</label><textarea data-k="desc">${esc(p.desc||'')}</textarea>
+    <label class="field">Rol / credit</label><textarea data-k="role">${esc(p.role||'')}</textarea>
+    <h2>Görseller</h2>
+    <div class="actions"><label class="btn primary">+ Görsel ekle<input id="imageInput" type="file" accept="image/*" multiple hidden></label><span class="badge">Kapak: ${esc(p.img||'seçilmedi')}</span></div>
+    <div class="media-grid">${imgs.map((src,i)=>`<div class="media-card ${src===p.img?'cover':''}"><img src="${esc(src)}" alt=""><div class="meta"><div class="path">${esc(src)}</div><div class="mini"><button class="btn" data-cover="${i}">Kapak yap</button><button class="btn" data-left="${i}">←</button><button class="btn" data-right="${i}">→</button><button class="btn danger" data-delimg="${i}">Sil</button></div></div></div>`).join('')}</div>
+    <h2>Video</h2>
+    <div class="actions"><label class="btn">${p.video?'Videoyu değiştir':'+ Video ekle'}<input id="videoInput" type="file" accept="video/*" hidden></label>${p.video?'<button class="btn danger" id="delVideo">Videoyu kaldır</button>':''}</div>
+    ${p.video?`<div class="video-box"><code>${esc(p.video)}</code><span class="badge">VIDEO</span></div>`:''}
+    <div class="actions" style="margin-top:36px"><button class="btn" id="duplicate">Projeyi kopyala</button><button class="btn danger" id="delete">Projeyi sil</button></div>
+    <p class="hint">Görselleri ekledikten sonra üstteki <b>Dosyalara kaydet</b> düğmesine bas. Böylece site gerçekten güncellenir.</p>`;
+  document.querySelectorAll('[data-k]').forEach(el=>el.oninput=()=>{p[el.dataset.k]=el.value;markDirty();list()});
+  $('#imageInput').onchange=e=>addImages([...e.target.files]); $('#videoInput').onchange=e=>e.target.files[0]&&addVideo(e.target.files[0]);
+  document.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>{p.img=imgs[+b.dataset.cover];markDirty();form()});
+  document.querySelectorAll('[data-delimg]').forEach(b=>b.onclick=()=>{const i=+b.dataset.delimg;const removed=imgs.splice(i,1)[0];rebuildSimpleGallery(p,imgs);if(p.img===removed)p.img=imgs[0]||'';markDirty();form()});
+  document.querySelectorAll('[data-left]').forEach(b=>b.onclick=()=>reorderImage(+b.dataset.left,-1));
+  document.querySelectorAll('[data-right]').forEach(b=>b.onclick=()=>reorderImage(+b.dataset.right,1));
+  if($('#delVideo'))$('#delVideo').onclick=()=>{p.video='';markDirty();form()};
+  $('#delete').onclick=()=>{if(confirm('Bu projeyi listeden silmek istiyor musun? Görsel dosyaları assets klasöründe kalır.')){data.splice(sel,1);sel=Math.max(0,Math.min(sel,data.length-1));markDirty();draw()}};
+  $('#duplicate').onclick=()=>{const c=JSON.parse(JSON.stringify(p));c.title+=' — Copy';data.splice(sel+1,0,c);sel++;markDirty();draw()};
+}
+function reorderImage(i,d){const p=data[sel],a=flatGallery(p.gallery||[]),j=i+d;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];rebuildSimpleGallery(p,a);markDirty();form()}
+function draw(){list();form()}
+function move(i,d){const j=i+d;if(j<0||j>=data.length)return;[data[i],data[j]]=[data[j],data[i]];sel=j;markDirty();draw()}
+async function projectAssetDir(){const assets=await getDir(rootHandle,'assets',true);const user=await getDir(assets,'user-projects',true);const folder=await getDir(user,slugify(data[sel].title),true);return folder}
+async function copyFile(file,targetDir,desiredName){let name=(desiredName||file.name).replace(/[^a-zA-Z0-9._-]+/g,'-');let base=name.replace(/\.[^.]+$/,''),ext=(name.match(/\.[^.]+$/)||[''])[0],n=1;while(true){try{await targetDir.getFileHandle(name);name=base+'-'+(++n)+ext}catch(e){if(e.name==='NotFoundError')break;throw e}}const h=await targetDir.getFileHandle(name,{create:true});const w=await h.createWritable();await w.write(file);await w.close();return name}
+async function addImages(files){if(!files.length)return;try{setStatus('Görseller kopyalanıyor…');const p=data[sel],dir=await projectAssetDir(),arr=flatGallery(p.gallery||[]);for(const f of files){const name=await copyFile(f,dir);const path=`assets/user-projects/${slugify(p.title)}/${name}`;arr.push(path);if(!p.img)p.img=path}rebuildSimpleGallery(p,arr);markDirty();form();setStatus('Görseller eklendi — kaydet')}catch(e){alert('Görsel eklenemedi: '+e.message)}}
+async function addVideo(file){try{setStatus('Video kopyalanıyor…');const p=data[sel],dir=await projectAssetDir();const name=await copyFile(file,dir);p.video=`assets/user-projects/${slugify(p.title)}/${name}`;markDirty();form();setStatus('Video eklendi — kaydet')}catch(e){alert('Video eklenemedi: '+e.message)}}
+async function saveAll(){if(!rootHandle)return;try{if(!(await permission(rootHandle,true)))throw new Error('Yazma izni yok.');await writeText(rootHandle,'projects.js',serializeProjects(data));dirty=false;setStatus('Dosyalara kaydedildi ✓',true);setTimeout(()=>setStatus('Klasör bağlı ✓',true),1800)}catch(e){alert('Kaydedilemedi: '+e.message)}}
+$('#connect').onclick=connectFolder;$('#connectTop').onclick=connectFolder;$('#save').onclick=saveAll;
+$('#preview').onclick=()=>{if(dirty&&!confirm('Kaydedilmemiş değişiklik var. Yine de siteyi açmak istiyor musun?'))return;location.href='index.html?refresh='+Date.now()};
+$('#add').onclick=()=>{data.push({title:'New Project',cat:'visualization',type:'ARCHITECTURE / VISUALIZATION',img:'',desc:'',role:'Role / credit information.',gallery:[]});sel=data.length-1;markDirty();draw()};
+window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue=''}});
+if(!window.showDirectoryPicker)$('#unsupported').classList.remove('hidden');
+</script>
+</body>
+</html>

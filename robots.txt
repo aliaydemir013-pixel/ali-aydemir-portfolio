@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://aliaydemir013-pixel.github.io/ali-aydemir-portfolio/sitemap.xml

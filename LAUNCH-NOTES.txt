@@ -1,0 +1,16 @@
+ALI AYDEMIR PORTFOLIO — PRODUCTION BUILD
+
+Prepared from V21 master.
+- Design/content unchanged.
+- Images converted to WebP and lazy-loaded.
+- Hero uses a lighter 720p autoplay file.
+- Full Mall film compressed while retaining sound.
+- Motion cards use lightweight 8-second silent previews; full films with original sound load only when opened.
+- Favicon, Open Graph share image, metadata, JSON-LD, robots.txt, web manifest and 404 page added.
+
+FINAL DEPLOYMENT STEP
+Once a final domain is chosen, add its absolute URL to:
+1) <link rel="canonical" href="https://YOUR-DOMAIN/">
+2) og:url
+3) Change og:image/twitter:image to https://YOUR-DOMAIN/assets/og-cover.jpg
+4) Add sitemap.xml with the final URL.
